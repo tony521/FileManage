@@ -1,0 +1,5 @@
+django==1.11.14
+python-magic>=0.4.15
+mysqlclient
+pillow
+qrcode==6.0

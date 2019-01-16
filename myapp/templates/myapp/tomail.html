@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Share your file now!</title>
+    </head>
+
+    <body>
+        
+        <!-- Upload form. Note enctype attribute! -->
+        <form action="" method="POST">
+            {% csrf_token %}
+            <p>分享下载链接 到 指定邮箱!</p>
+	     <a href="http{% if request.is_secure %}s{% endif %}://{{ file_url }}">{{ file_url }}</a>
+{{ eform.as_p }}
+            <p><input type="submit" value="Send Email"/></p>
+        </form>
+    </body>
+
+</html>
+
