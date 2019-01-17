@@ -17,6 +17,7 @@ import qrcode
 import json,urllib.request#钉钉发消息
 import shutil #拷贝文件
 from .inspect import Scan #导入clamav检测
+from  .filemd5 import get_md5_01 #md5
 def handle_repetitive_file(file):
     """
         处理同名的或者重复的文件
@@ -62,12 +63,13 @@ def handle_uploaded_files(files, owner, directory):
                 digest.update(chunk)
 
         digest = digest.hexdigest() # hash 对象转字符串
-        print("打印:",digest)
+        md5_value = get_md5_01(temp_filename)
+        #print("打印:",digest)
         file_ext=file_extension(file.name)
-        print("文件后缀名:",file_ext)
+        #print("文件后缀名:",file_ext)
         abspath = os.path.join(media_dir, digest) # 服务器路径，用于储存
         original_file = os.path.join(media_dir, file.name) #用户保存原本文件
-        print("handle打印1:",abspath)
+        #print("handle打印1:",abspath)
         file = File.objects.create( # 返回 file 对象
             name = re.sub(r'[%/]', '_', file.name), # 给用户看的名字，去掉正斜杠和百分号，just in case
                                                # 亲测 mac 下，名字带正斜杠的文件无法被上传
@@ -76,6 +78,7 @@ def handle_uploaded_files(files, owner, directory):
             digest = digest,    # 服务器上真正的名字
             path = directory.path, # 用户路径，用户给用户展示，不包含文件名
             size = file._size,
+            md5  = md5_value,
 
 
         )
