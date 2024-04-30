@@ -81,6 +81,7 @@ class File(models.Model):
     qrcode = models.CharField(max_length=256)
     intro = models.CharField(max_length=4096, default='')
     downloads = models.IntegerField(default=0)
+    md5 = models.CharField(max_length=40)
     def __str__(self):
         return self.name
 

@@ -84,9 +84,9 @@ WSGI_APPLICATION = 'webdrive.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'test13',
+        'NAME': 'test',
         'USER': 'root',
-        'PASSWORD': 'Hjkdfd981232sa',
+        'PASSWORD': '',
         'CHARSET': 'utf8mb4',
         'HOST': '127.0.0.1',
         'PORT': 3306,
@@ -138,8 +138,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 #配置二维码URL
-QR_URL = 'http://47.106.75.120:82/download/'
-DD_URL = 'https://oapi.dingtalk.com/robot/send?access_token=7c53ead58275ee5b702c5f979b04037a59c93f5e3d6c30f91f2dd131ca193f149'
+QR_URL = 'http://ip/download/'
+DD_URL = 'https://oapi.dingtalk.com/robot/send?access_token=""'
 # 配置邮箱发邮件的相关功能
 
 #这一项是固定的
@@ -149,7 +149,7 @@ EMAIL_HOST = 'smtp.exmail.qq.com'
 # smtp服务固定的端口是25
 EMAIL_PORT = 587
 #发送邮件的邮箱
-EMAIL_HOST_USER = 'info@zlddata.cn'
+EMAIL_HOST_USER = 'info@'
 #在邮箱中设置的客户端授权密码
 EMAIL_HOST_PASSWORD = ''
 EMAIL_SUBJECT_PREFIX = u'django'
@@ -158,5 +158,5 @@ EMAIL_USE_TLS = True
 #EMIAL_USE_TLS = False
 #EMAIL_USE_SSL = True
 #收件人看到的发件人 <此处要和发送邮件的邮箱相同>
-DEFAULT_FROM_EMAIL  = 'info@zlddata.cn'
+DEFAULT_FROM_EMAIL  = 'info@'
 

@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
-from django.http import HttpResponse, StreamingHttpResponse, Http404,HttpResponseRedirect
+from django.http import HttpResponse, StreamingHttpResponse, Http404,HttpResponseRedirect,FileResponse
 from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -18,7 +18,9 @@ import mimetypes
 from io import BytesIO
 from urllib.parse import quote
 import os
-
+import re
+import stat
+from django.utils.http import http_date
 # you need 'brew install libmagic' under Mac OS
 import magic
 #二维码
@@ -248,20 +250,18 @@ def upload(request):
     return redirect('myapp:index')
 
 
-@login_required
+#@login_required
 def download(request, pk):
     """ 一般是下载，当附带 preview=True query string 时为预览 """    
 
     file = get_object_or_404(File, pk=pk)
+    media_dir = get_media_abspath()
+    fullpath = os.path.join(media_dir, file.digest)
     file.downloads = file.downloads + 1
     file.save()
     buf = open(file.get_full_path(), 'rb')
     response = HttpResponse(buf)   
     response['Content-Length'] = str(file.size)
-#    file1=file.id
-#    data='http://47.106.75.120:82/download/'+str(file1)+''
-#    img2=qrcode.make(data=data)
-#    img2.save("1.jpg")
 
     if request.GET.get('preview'):
         filetype = mimetypes.guess_type(file.name)[0]
@@ -269,8 +269,25 @@ def download(request, pk):
            filetype = 'application/octet-stream'   
         response['Content-Type'] = filetype
     else:
-        response['Content-Type'] = 'application/force-download'
+       # response['Content-Type'] = 'application/force-download'
+       # response['Content-Disposition'] = 'attachment; filename={}'.format(quote(file.name))
+        statobj = os.stat(fullpath)
+        content_type, encoding = mimetypes.guess_type(fullpath)
+        content_type = content_type or 'application/octet-stream'
+        start_bytes = re.search(r'bytes=(\d+)-', request.META.get('HTTP_RANGE', ''), re.S)
+        start_bytes = int(start_bytes.group(1)) if start_bytes else 0
+        the_file = open(fullpath, 'rb')
+        the_file.seek(start_bytes, os.SEEK_SET)
+        response = FileResponse(the_file, content_type=content_type, status=206 if start_bytes > 0 else 200)
+        response['Last-Modified'] = http_date(statobj.st_mtime)
+        if stat.S_ISREG(statobj.st_mode):
+            response['Content-Length'] = statobj.st_size - start_bytes
+        if encoding:
+            response['Content-Encoding'] = encoding
+        response['Content-Range'] = 'bytes %s-%s/%s' % (start_bytes, statobj.st_size - 1, statobj.st_size)
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         response['Content-Disposition'] = 'attachment; filename={}'.format(quote(file.name))
+
     return response
 
 
@@ -284,15 +301,6 @@ def preview(request, pk):
 
     file = get_object_or_404(File, pk=pk)
     magic_type = magic.from_file(file.get_full_path())
-#二维码
-#    file1=file.id
-#    data='http://47.106.75.120:82/download/'+str(file1)+''
-#    img2=qrcode.make(data=data)
-#    img2.save("1.jpg")
-#    try:
-#          file2 = File.objects.create(qrcode=file.name)
-#    except:
-#            return redirect(reverse(index))
     if request.GET.get('thumbnail'):
         if 'image' in magic_type:
             response = "<a target='_blank' href='{a}/{b}?preview=True'><img src='{a}/{b}''>".format(a='/download', b=pk)
@@ -307,7 +315,6 @@ def preview(request, pk):
 @login_required
 def edit(request, pk):
     """ 暂时只支持编辑文件名
-        todo: 支持移动路径、是否共享
     """
 
     file = get_object_or_404(File, pk=pk)
@@ -373,22 +380,18 @@ def intro(request, pk):
     return render(request, 'myapp/intro.html', context)
 #link  to  mail
 def send_url(email,name,url):
-     #Need to put mail function here
-#     send_mail('包分享', 'App 链接.', 'info@zlddata.cn',[email], fail_silently=False)
      print("Sharing %s with %s as %s" %(url,email,name))
 
 @login_required
 def tomail(request, pk):
     file = get_object_or_404(File, pk=pk)
     file_url = request.session.get('file_url')
-    print("tomail1:",file_url)
     hostname = request.get_host()
     ID=file.id
     hurl=settings.QR_URL
     #file_url = str(hostname) + str(file_url)
     file_url  = ''+hurl+''+str(ID)+''
     eform = EmailForm(request.POST or None)
-    print("tomail2:",hostname,file_url,eform)
     if eform.is_valid():
         email = eform.cleaned_data["email"]
         name = eform.cleaned_data["name"]
@@ -405,29 +408,9 @@ def thank_you(request):
     file_url = request.session.get('file_url')
     context = { "recipentName": recipentName,"recipentEmail": recipentEmail, "file_url":file_url}
     return render(request,"myapp/thank_you.html",context)
-#def view_file(request, id):
-#    obj = get_object_or_404(File, id=id)
-#    download_url = obj.get_download_url(request)
-#    print("打印:",obj,download_url)
-#    return render(request, 'uploader/view_file.html', {'obj': obj, 'download_url': download_url})
-#def downloadr(request, id):
-#    obj = get_object_or_404(File, id=id)
-#
-#    obj.downloads = obj.downloads + 1
-#    obj.datetime = datetime.now()
-#    obj.save()
-#
-#    #filename = obj.file.name.split('/')[-1]
-#    filename = obj.name
-#    response = HttpResponse(obj.file, content_type='text/plain')
-#    response['Content-Disposition'] = 'attachment; filename=%s' % filename
-#
-#    return response
 
 def recent_files(request, pk):
     query_results = File.objects.order_by('-datetime')[:9]
-    print("打印:",query_results)
     for item in query_results:
         item.url = item.get_file_url(request)
-        print("打印:",item.url)
     return render(request, 'myapp/view_files.html', {'query_results': query_results})

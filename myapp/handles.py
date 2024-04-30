@@ -64,12 +64,9 @@ def handle_uploaded_files(files, owner, directory):
 
         digest = digest.hexdigest() # hash 对象转字符串
         md5_value = get_md5_01(temp_filename)
-        #print("打印:",digest)
         file_ext=file_extension(file.name)
-        #print("文件后缀名:",file_ext)
         abspath = os.path.join(media_dir, digest) # 服务器路径，用于储存
         original_file = os.path.join(media_dir, file.name) #用户保存原本文件
-        #print("handle打印1:",abspath)
         file = File.objects.create( # 返回 file 对象
             name = re.sub(r'[%/]', '_', file.name), # 给用户看的名字，去掉正斜杠和百分号，just in case
                                                # 亲测 mac 下，名字带正斜杠的文件无法被上传
@@ -82,28 +79,21 @@ def handle_uploaded_files(files, owner, directory):
 
 
         )
-     #   file_ext=file_extension(file.name)
-     #   print("文件后缀名:",file_ext)
 
         if file_ext == ".ipa"  :
            print("iso 文件")
         
         else:
           file_ext=file_extension(file.name)
-          print("文件后缀名:",file_ext)
-          print("handle打印2:",file)
           ID=file.id
           qrurl=settings.QR_URL#导入settings里配置的变量
-          print("打印qrurl:",qrurl)
           data=''+qrurl+''+str(ID)+''
           img2=qrcode.make(data=data)
           imgname=''+digest+'.jpg'
-          print("打印图片名字:",imgname)
           img2.save('myapp/static/myapp/img/'+imgname+'')        
           fileid = File.objects.get(id=ID)
           fileid.qrcode=(imgname)
           fileid.save() 
-          print("打印:",ID,data)
 #clamav
 #          IPs=['127.0.0.1']   #扫描主机的列表
 #          scantype="multiscan_file" #指定扫描模式,支持 multiscan_file、contscan_file、scan_file
@@ -135,7 +125,7 @@ def handle_uploaded_files(files, owner, directory):
           data = {
             "msgtype": "text",
             "text": {
-            "content": "有新的文件上传哦"
+            "content": "有新的文件: %s" % file.name
              },
             "at": {
                 "isAtAll": True     #@全体成员（在此可设置@特定某人）
@@ -147,8 +137,9 @@ def handle_uploaded_files(files, owner, directory):
           opener = urllib.request.urlopen(request)
           print(opener.read())
         os.rename(temp_filename, abspath)
-        shutil.copyfile(abspath, original_file) #多一份保存原版文件
+       # shutil.copyfile(abspath, original_file) #多一份保存原版文件
         handle_repetitive_file(file)
+
 
 def set_captcha_to_session(request, captcha_text):
     """
